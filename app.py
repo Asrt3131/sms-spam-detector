@@ -1,101 +1,24 @@
 import streamlit as st
 import joblib
-import numpy as np
+import re
+import os
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 
-# ==================== تنظیمات صفحه ====================
-st.set_page_config(
-    page_title="تشخیص اسپم SMS",
-    page_icon="📧",
-    layout="centered",
-    initial_sidebar_state="expanded"
-)
+# ==================== رفع مشکل BitLocker ====================
+# مسیر nltk_data رو به درایو D منتقل می‌کنیم تا به درایو قفل‌شده E کاری نداشته باشه
+NLTK_DIR = r"D:\nltk_data"
+os.makedirs(NLTK_DIR, exist_ok=True)
 
-# ==================== CSS سفارشی ====================
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
+# مسیرهای مربوط به درایو E رو حذف کن
+nltk.data.path = [p for p in nltk.data.path if not str(p).upper().startswith("E:")]
+# مسیر امن D رو اضافه کن
+nltk.data.path.insert(0, NLTK_DIR)
 
-    html, body, [class*="css"] {
-        font-family: 'Vazirmatn', sans-serif;
-        direction: rtl;
-        text-align: right;
-    }
-
-    .main-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: linear-gradient(90deg, #667eea, #764ba2);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        margin-bottom: 0.5rem;
-    }
-
-    .subtitle {
-        text-align: center;
-        color: #666;
-        font-size: 1.1rem;
-        margin-bottom: 2rem;
-    }
-
-    .result-box {
-        padding: 1.5rem;
-        border-radius: 15px;
-        text-align: center;
-        font-size: 1.3rem;
-        font-weight: 600;
-        margin-top: 1rem;
-        animation: fadeIn 0.5s ease-in;
-    }
-
-    .spam-box {
-        background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
-        color: white;
-        box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
-    }
-
-    .ham-box {
-        background: linear-gradient(135deg, #51cf66, #37b24d);
-        color: white;
-        box-shadow: 0 8px 20px rgba(81, 207, 102, 0.3);
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .footer {
-        text-align: center;
-        margin-top: 3rem;
-        padding-top: 1.5rem;
-        border-top: 2px solid #eee;
-        color: #888;
-        font-size: 0.9rem;
-        line-height: 2;
-    }
-
-    .footer .name {
-        font-weight: 700;
-        background: linear-gradient(90deg, #667eea, #764ba2);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 1.05rem;
-    }
-
-    .stButton>button {
-        border-radius: 10px;
-        font-weight: 600;
-        transition: all 0.3s;
-    }
-
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-    </style>
-""", unsafe_allow_html=True)
-
+nltk.download('stopwords', download_dir=NLTK_DIR, quiet=True)
+nltk.download('wordnet', download_dir=NLTK_DIR, quiet=True)
+nltk.download('omw-1.4', download_dir=NLTK_DIR, quiet=True)
 
 # ==================== بارگذاری مدل ====================
 @st.cache_resource
@@ -107,119 +30,111 @@ def load_models():
 try:
     model, vectorizer = load_models()
 except FileNotFoundError as e:
-    st.error(f"❌ فایل مدل پیدا نشد: {e}")
-    st.info("لطفاً مطمئن شوید فایل‌های `spam_model.pkl` و `vectorizer.pkl` در کنار `app.py` هستند.")
+    st.error(f"❌ Model file not found: {e}")
+    st.info("Make sure `spam_model.pkl` and `vectorizer.pkl` are in the same folder as `app.py`.")
     st.stop()
 
+# ==================== Preprocessing ====================
+lemmatizer = WordNetLemmatizer()
+stop_words = set(stopwords.words('english'))
 
-# ==================== هدر ====================
-st.markdown('<div class="main-title">📧 تشخیص پیامک اسپم</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">با هوش مصنوعی، متن پیامک خود را تحلیل کنید</div>', unsafe_allow_html=True)
+def preprocess(text):
+    text = text.lower()
+    text = re.sub(r'http\S+|www\S+|https\S+', '', text)
+    text = re.sub(r'\S+@\S+', '', text)
+    text = re.sub(r'[^a-z\s]', '', text)
+    tokens = text.split()
+    tokens = [lemmatizer.lemmatize(w) for w in tokens if w not in stop_words and len(w) > 2]
+    return ' '.join(tokens)
 
+# ==================== UI ====================
+st.set_page_config(page_title="SMS Spam Detector", page_icon="📧", layout="centered")
 
-# ==================== سایدبار ====================
-with st.sidebar:
-    st.header("ℹ️ دربارهٔ این اپ")
-    st.write(
-        "این اپلیکیشن با استفاده از **یادگیری ماشین** و **پردازش زبان طبیعی**، "
-        "پیامک‌های اسپم را از پیام‌های عادی تشخیص می‌دهد."
-    )
-    st.divider()
-    st.subheader("🎯 نمونه‌های آماده")
-    st.write("برای تست سریع، روی یکی از دکمه‌ها کلیک کن:")
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
+    html, body, [class*="css"] {
+        font-family: 'Vazirmatn', sans-serif;
+    }
+    .main-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+    }
+    .footer {
+        text-align: center;
+        margin-top: 3rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #eee;
+        color: #888;
+        font-size: 0.95rem;
+    }
+    .footer .name {
+        font-weight: 700;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-    if st.button("📢 نمونه اسپم", use_container_width=True):
-        st.session_state['sample'] = "Congratulations! You've won a $1000 Walmart gift card. Click here to claim now!"
-
-    if st.button("💬 نمونه عادی", use_container_width=True):
-        st.session_state['sample'] = "سلام، جلسه فردا ساعت ۱۰ صبح برگزار می‌شود. لطفاً حضور داشته باشید."
-
-    st.divider()
-    st.caption("ساخته شده با ❤️ با Streamlit")
-
-
-# ==================== ورودی کاربر ====================
-default_text = st.session_state.get('sample', '')
-
-user_input = st.text_area(
-    "✍️ متن پیامک خود را وارد کنید:",
-    value=default_text,
-    height=150,
-    placeholder="مثلاً: Congratulations! You've won a free prize..."
+st.markdown('<div class="main-title">📧 SMS Spam Detector (Advanced)</div>', unsafe_allow_html=True)
+st.markdown(
+    "<p style='text-align:center;color:#666;'>This app uses <b>SVM + TF-IDF + SMOTE</b> "
+    "to detect spam messages with high accuracy.</p>",
+    unsafe_allow_html=True
 )
+
+user_input = st.text_area("✍️ Enter your SMS message:", height=150,
+                          placeholder="e.g. Congratulations! You've won a $1000 gift card. Click here...")
 
 col1, col2 = st.columns([3, 1])
 with col1:
-    check = st.button("🔍 بررسی کن", type="primary", use_container_width=True)
+    analyze = st.button("🔍 Analyze", type="primary", use_container_width=True)
 with col2:
-    clear = st.button("🗑️ پاک کن", use_container_width=True)
+    clear = st.button("🗑️ Clear", use_container_width=True)
 
 if clear:
-    st.session_state['sample'] = ''
     st.rerun()
 
-
-# ==================== پیش‌بینی ====================
-if check:
-    if user_input.strip() == "":
-        st.warning("⚠️ لطفاً یک متن وارد کنید.")
+if analyze:
+    if not user_input.strip():
+        st.warning("⚠️ Please enter a message.")
     else:
-        with st.spinner("⏳ در حال تحلیل پیامک..."):
-            input_vec = vectorizer.transform([user_input])
-            prediction = model.predict(input_vec)[0]
+        with st.spinner("⏳ Analyzing..."):
+            cleaned = preprocess(user_input)
+            vec = vectorizer.transform([cleaned])
+            pred = model.predict(vec)[0]
 
-            # درصد اطمینان (اگر مدل پشتیبانی کند)
             confidence = None
             if hasattr(model, "predict_proba"):
-                proba = model.predict_proba(input_vec)[0]
-                confidence = proba[int(prediction)] * 100
+                proba = model.predict_proba(vec)[0]
+                confidence = proba[int(pred)] * 100
 
-        st.divider()
-        st.subheader("📊 نتیجهٔ تحلیل")
-
-        if prediction == 1:
-            st.markdown(
-                '<div class="result-box spam-box">🚨 این پیامک <b>اسپم</b> است!</div>',
-                unsafe_allow_html=True
-            )
+        if pred == 1:
+            st.error("🚨 **SPAM DETECTED**")
         else:
-            st.markdown(
-                '<div class="result-box ham-box">✅ این پیامک <b>غیراسپم (Ham)</b> است.</div>',
-                unsafe_allow_html=True
-            )
+            st.success("✅ **NOT SPAM (Ham)**")
 
         if confidence is not None:
-            st.write("")
-            st.write(f"**🎯 میزان اطمینان مدل:** {confidence:.2f}%")
+            st.write(f"**🎯 Confidence:** {confidence:.2f}%")
             st.progress(int(confidence))
 
-        # جزئیات بیشتر
-        with st.expander("🔬 جزئیات بیشتر"):
-            st.write(f"**طول متن:** {len(user_input)} کاراکتر")
-            st.write(f"**تعداد کلمات:** {len(user_input.split())}")
-            st.write(f"**پیش‌بینی خام مدل:** {prediction}")
+        with st.expander("🔬 See details"):
+            st.write("**Original:**", user_input)
+            st.write("**Cleaned:**", cleaned)
+            st.write("**Prediction (raw):**", pred)
             if confidence is not None:
-                st.write(f"**درصد اطمینان:** {confidence:.2f}%")
+                st.write(f"**Confidence:** {confidence:.2f}%")
 
-        # امکان دانلود نتیجه
-        result_text = (
-            f"متن ورودی:\n{user_input}\n\n"
-            f"نتیجه: {'اسپم 🚨' if prediction == 1 else 'غیراسپم ✅'}\n"
-            f"اطمینان: {confidence:.2f}%\n" if confidence else ""
-        )
-        st.download_button(
-            "💾 دانلود نتیجه",
-            data=result_text,
-            file_name="spam_result.txt",
-            mime="text/plain"
-        )
-
-
-# ==================== فوتر ====================
+# ==================== Footer ====================
+st.markdown("---")
 st.markdown("""
     <div class="footer">
-        ساخته شده توسط<br>
-        <span class="name">a_srt343</span><br>
-        <span class="name">project_srt343</span>
+        Built by <span class="name">A_srt343</span><br>
+        Instagram: <span class="name">@project_srt343</span>
     </div>
 """, unsafe_allow_html=True)
