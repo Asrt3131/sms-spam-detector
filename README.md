@@ -8,7 +8,7 @@ A machine learning project that classifies SMS messages as **Spam** or **Ham** (
 
 ## 🚀 Live Demo
 
-Try the app here: [YOUR_APP_LINK](YOUR_APP_LINK)
+Try the app here: [YOUR_APP_LINK](sms-spam-detector-z33cmlt6wvjcrzc63ivvlj)
 
 Enter any SMS text and the model will instantly tell you whether it is spam or not.
 
