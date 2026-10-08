@@ -1,85 +1,68 @@
-# 📧 SMS Spam Detection
+# 📧 SMS Spam Detection (Advanced)
 
-A machine learning project that classifies SMS messages as **Spam** or **Ham** (not spam) with over **95% accuracy**.
+An advanced machine learning pipeline that classifies SMS messages as **Spam** or **Ham** with **95%+ accuracy**, using multiple models, SMOTE balancing, and a Streamlit web app.
 
-![Demo Screenshot](screenshot.png)
+![Confusion Matrix](confusion_matrix.png)
 
 ---
 
 ## 🚀 Live Demo
 
-Try the app here: [https://sms-spamdetector.streamlit.app/](https://sms-spamdetector.streamlit.app/)
-
-Enter any SMS text and the model will instantly tell you whether it is spam or not.
+👉 [Try the app here](YOUR_APP_LINK)
 
 ---
 
-## 📌 Project Overview
+## 🎯 Features
 
-Spam messages are annoying and sometimes dangerous (phishing, scams, etc.). This project builds a text classification model that automatically detects spam SMS messages.
-
-The pipeline:
-1. Load and clean the SMS dataset
-2. Convert text to numerical features using **TF-IDF**
-3. Train a **Multinomial Naive Bayes** classifier
-4. Evaluate the model (accuracy > 95%)
-5. Deploy as an interactive **Streamlit** web app
+- ✅ Advanced text preprocessing (lemmatization, stopwords, URL removal)
+- ✅ TF-IDF with n-grams (1,2)
+- ✅ SMOTE for handling class imbalance
+- ✅ Comparison of 4 models: Naive Bayes, SVM, Logistic Regression, Random Forest
+- ✅ Hyperparameter tuning with GridSearchCV (5-fold CV)
+- ✅ Confusion matrix + classification report
+- ✅ Interactive Streamlit web app
 
 ---
 
 ## 🧠 Tech Stack
 
-- **Python 3**
-- **Pandas** – data manipulation
-- **Scikit-learn** – TF-IDF vectorization, Naive Bayes model, evaluation
-- **Joblib** – model serialization
-- **Streamlit** – interactive web app
+- Python 3.10+
+- Pandas, NumPy
+- Scikit-learn (TF-IDF, SVM, NB, LR, RF, GridSearch)
+- Imbalanced-learn (SMOTE)
+- NLTK (lemmatization, stopwords)
+- Streamlit (deployment)
+- Joblib (model persistence)
+- Matplotlib & Seaborn (visualization)
 
 ---
 
 ## 📂 Dataset
 
-- **Name:** SMS Spam Collection Dataset
-- **Source:** [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/machine-learning-databases/00228/smsspamcollection.zip)
-- **Size:** 5,574 SMS messages
-- **Labels:** `ham` (non-spam) and `spam`
-
-Distribution:
-- Ham: ~4,825 messages (~86%)
-- Spam: ~747 messages (~14%)
+- **Name:** SMS Spam Collection
+- **Source:** [UCI ML Repository](https://archive.ics.uci.edu/ml/machine-learning-databases/00228/smsspamcollection.zip)
+- **Size:** 5,574 messages
+- **Classes:** Ham (~86%) / Spam (~14%)
 
 ---
 
-## 📊 Model Performance
+## 📊 Results
 
-| Metric     | Score   |
-|------------|---------|
-| Accuracy   | ~97%    |
-| Precision  | ~99%    |
-| Recall     | ~90%    |
-| F1-Score   | ~94%    |
+| Model                | Accuracy | F1-Score |
+|----------------------|----------|----------|
+| Naive Bayes          | ~97%     | ~93%     |
+| Linear SVM (tuned)   | **~98%** | **~95%** |
+| Logistic Regression  | ~97%     | ~93%     |
+| Random Forest        | ~97%     | ~92%     |
 
-> Note: Because the dataset is imbalanced, **F1-Score** and **Recall** are more meaningful than accuracy alone.
-
----
-
-## 🖼️ Screenshot
-
-![App Screenshot](screenshot.png)
-
-*The Streamlit app detecting a spam message in real time.*
+**Best model:** Linear SVM (tuned via GridSearchCV)
 
 ---
 
 ## ⚙️ How to Run Locally
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/a-srt343/sms-spam-detection.git
-cd sms-spam-detection
-
-# 2. Install dependencies
+git clone https://github.com/a-srt343/sms-spam-detection-advanced.git
+cd sms-spam-detection-advanced
 pip install -r requirements.txt
-
-# 3. Run the Streamlit app
 streamlit run app.py
