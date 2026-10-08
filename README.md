@@ -8,7 +8,8 @@ An advanced machine learning pipeline that classifies SMS messages as **Spam** o
 
 ## 🚀 Live Demo
 
-👉 [https://sms-spam-detector-kb98vmxzj65ttuffy6h56dsyvu55.streamlit.app/](YOUR_APP_LINK(https://sms-spam-detector-kb98vmxzj65ttuffy6h56dsyvu55.streamlit.app/))
+👉 Try the app here: [https://sms-spam-detector-kb98vmxzj65ttuffy6h56dsyvu55.streamlit.app/](https://sms-spam-detector-kb98vmxzj65ttuffy6h56dsyvu55.streamlit.app/)
+
 
 ---
 
